@@ -1,0 +1,49 @@
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from textblob import TextBlob
+def transform_(mail):
+    bow = CountVectorizer(analyzer=lemma_).fit(X_train)
+    messages = bow.transform(mail)
+    print('sparse matrix shape:', messages.shape)
+    print('number of non-zeros:', messages.nnz) 
+    print('sparsity: %.2f%%' % (100.0 * messages.nnz / (messages.shape[0] * messages.shape[1])))
+    tfidf = TfidfTransformer().fit(messages)
+    tfidf_msgs = tfidf.transform(messages)
+    return tfidf_msgs
+
+import nltk
+# contains specific words which is word library based on spam and ham 
+nltk.download('punkt')
+nltk.download('wordnet')
+nltk.download('omw-1.4') 
+
+#Training the models
+train_features = transform_(X_train)
+
+# Permonace matrices of the model which is how model is trained and performing up to the bench mark of expectation on accurancy 
+from sklearn.metrics import classification_report, f1_score, accuracy_score, confusion_matrix 
+from sklearn.metrics import precision_score , roc_auc_score , recall_score
+# Function created for the matrix
+def model_assessment(y_test,predicted_class):
+    print('confusion matrix')
+    print(confusion_matrix(y_test,predicted_class))
+    print('accuracy')
+    print(accuracy_score(y_test,predicted_class))
+    print('precision')
+    print(precision_score(y_test,predicted_class,pos_label='spam'))
+    print('recall')
+    print(recall_score(y_test,predicted_class,pos_label='spam'))
+    print('f-Score')
+    print(f1_score(y_test,predicted_class,pos_label='spam'))
+    print('AUC')
+    print(roc_auc_score(np.where(y_test=='spam',1,0),np.where(predicted_class=='spam',1,0)))
+    plt.matshow(confusion_matrix(y_test, predicted_class), cmap=plt.cm.binary, interpolation='nearest')
+    plt.title('confusion matrix')
+    plt.colorbar()
+    plt.ylabel('expected label')
+    plt.xlabel('predicted label')
+
+def model_prediction(model):
+    model.fit(train_features,y_train)
+    testing_features = transform_(X_test)
+    prediction = model.predict(testing_features)
+    print(model_assessment(y_test,prediction))
