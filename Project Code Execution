@@ -70,7 +70,6 @@ nltk.download('omw-1.4')
 #transforming the train feaatures (tf-idf)
 train_features = transform_(X_train)
 
-#@title
 # Permonace matrices of the model which is how model is trained and performing up to the bench mark of expectation on accurancy 
 from sklearn.metrics import classification_report, f1_score, accuracy_score, confusion_matrix 
 from sklearn.metrics import precision_score , roc_auc_score , recall_score
@@ -94,7 +93,6 @@ def model_assessment(y_test,predicted_class):
     plt.ylabel('expected label')
     plt.xlabel('predicted label')
 
-#@title
 # function that trains an inputted model on the training data, predicts on the transformed testing features, 
 # and then assess the prediction by the correlating true label.
 
@@ -205,7 +203,7 @@ for word, i in tokenizer.word_index.items():
         matrix[i] = model.wv[word]
 print(matrix.shape)
 
-#building a model
+# building a model
 embedding_layer = Embedding(vocabulary_size, 100, weights = [matrix], input_length = 300, trainable = False)
 model = Sequential()
 model.add(embedding_layer)
