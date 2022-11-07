@@ -1,0 +1,106 @@
+!pip install gensim
+import gensim
+from gensim.models import Word2Vec
+
+pip install --upgrade gensim
+
+df = pd.read_csv('spam_ham_dataset1.csv')
+df.head()
+
+df["text"] = df.text
+df["spam"] = df.label
+
+X_word2vec = df["text"]
+Y_word2vec = df["spam"]
+X_word2vec, Y_word2vec
+
+from sklearn.preprocessing import LabelEncoder
+le_word2vec = LabelEncoder()
+Y_word2vec = le_word2vec.fit_transform(Y_word2vec)
+Y_word2vec
+
+from nltk.corpus import stopwords 
+from nltk.stem.porter import PorterStemmer
+nltk.download('stopwords')
+
+stemmer=PorterStemmer()
+corpus=[]
+for i in range(len(df["text"])):
+    text_1=re.sub('[^a-zA-Z]'," ",df["text"][i])
+    text_1=text_1.lower()
+    text_1=text_1.split()
+    text_1=[stemmer.stem(word) for word in text_1 if word not in stopwords.words('english')]
+    text_1=' '.join(text_1)
+    corpus.append(text_1)
+
+print(len(corpus))
+print(len(Y_word2vec))
+
+xtrain , xtest , ytrain , ytest = train_test_split(corpus , Y_word2vec , test_size = 0.2 , random_state = 2)
+
+doc = [text.split() for text in xtrain]
+
+model = gensim.models.Word2Vec(window = 3 , min_count = 5 , workers = 8)
+
+model.build_vocab(doc)
+
+words = list(model.wv.index_to_key)
+vocabulary_size = len(words)
+print(vocabulary_size)
+
+model.train(doc , total_examples = len(doc) , epochs = 32)
+
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(xtrain)
+vocabulary_size = len(tokenizer.word_index) + 1
+print(vocabulary_size)
+
+x_train = pad_sequences(tokenizer.texts_to_sequences(xtrain) , maxlen = 300)
+x_test = pad_sequences(tokenizer.texts_to_sequences(xtest) , maxlen = 300)
+
+matrix = np.zeros((vocabulary_size, 100))
+print(matrix)
+for word, i in tokenizer.word_index.items():
+    if word in model.wv:
+        matrix[i] = model.wv[word]
+print(matrix.shape)
+
+embedding_layer = Embedding(vocabulary_size, 100, weights = [matrix], input_length = 300, trainable = False)
+model = Sequential()
+model.add(embedding_layer)
+model.add(Dropout(0.2))
+model.add(LSTM(64, dropout = 0.2, recurrent_dropout = 0.2))
+model.add(Dense(1, activation = 'sigmoid'))
+
+model.summary()
+
+model.compile(loss = 'binary_crossentropy' , optimizer = "adam" , metrics = ['accuracy'])
+
+history = model.fit(x_train , ytrain , batch_size = 32 , epochs = 20, validation_split = 0.1 ,
+                    verbose = 1 , callbacks = [ ReduceLROnPlateau(monitor = 'val_loss' , patience = 5 , cooldown = 0),
+              EarlyStopping(monitor = 'val_acc', min_delta = 1e-4 , patience = 5)] )
+
+score = model.evaluate(x_test, ytest, batch_size = 32)
+print()
+print("Accuracy Score : " , score[1])
+print("Loss Score : " , score[0])
+
+y_predict  = [1 if o>0.5 else 0 for o in model.predict(x_test)]
+
+cf_matrix = confusion_matrix(ytest , y_predict)
+
+tn, fp, fn, tp = confusion_matrix(ytest,y_predict).ravel()
+
+ax= plt.subplot()
+sns.heatmap(cf_matrix, annot=True, ax = ax,cmap='Blues',fmt=''); #annot=True to annotate cells
+
+ax.set_xlabel('Predicted labels');
+ax.set_ylabel('True labels'); 
+ax.set_title('Confusion Matrix'); 
+ax.xaxis.set_ticklabels(['Not Spam', 'Spam']); ax.yaxis.set_ticklabels(['Not Spam', 'Spam']);
+
+print("Precision: {:.2f}%".format(100 * precision_score(ytest, y_predict)))
+print("Recall: {:.2f}%".format(100 * recall_score(ytest, y_predict)))
+print("F1 Score: {:.2f}%".format(100 * f1_score(ytest,y_predict)))
+
+f1_score(ytest,y_predict)
