@@ -1,0 +1,4 @@
+#Performance matrix of model
+from sklearn.svm import SVC
+model = SVC()
+model_prediction(model)
