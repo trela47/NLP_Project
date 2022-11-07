@@ -1,0 +1,46 @@
+#installing textblob for use in preprocessing data
+!pip install textblob
+
+# turning off warnings
+import warnings
+warnings.filterwarnings("ignore")
+
+# importing common libraries
+import matplotlib.pyplot as plt
+import csv 
+import sklearn
+import numpy as np
+
+
+# reading in dataset to pandas DataFrame
+import pandas as pd
+df = pd.read_csv('spam_ham_dataset1.csv')
+df.head()
+
+#dropping unneccessary columns/features
+df = df.drop('Unnamed: 0', axis=1) #dropping the Unnamed: 0 & label_num column
+df = df.drop('label_num', axis=1)  
+df.head() #retrieving data after dropping unnecessary data
+
+#regrouping spam and ham datasets with shuffling
+from sklearn.utils import shuffle
+spam_ham = pd.concat([spam,ham])  #grouping the both ham and spam
+spam_ham = shuffle(spam_ham)
+spam_ham
+
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from textblob import TextBlob
+def transform_(mail):
+    bow = CountVectorizer(analyzer=lemma_).fit(X_train)
+    messages = bow.transform(mail)
+    print('sparse matrix shape:', messages.shape)
+    print('number of non-zeros:', messages.nnz) 
+    print('sparsity: %.2f%%' % (100.0 * messages.nnz / (messages.shape[0] * messages.shape[1])))
+    tfidf = TfidfTransformer().fit(messages)
+    tfidf_msgs = tfidf.transform(messages)
+    return tfidf_msgs
+    
+    #Performance matrix of model
+from sklearn.ensemble import RandomForestClassifier
+model=RandomForestClassifier(n_estimators=20,criterion='entropy')
+model_prediction(model)
