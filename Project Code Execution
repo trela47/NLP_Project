@@ -67,7 +67,7 @@ nltk.download('punkt')
 nltk.download('wordnet')
 nltk.download('omw-1.4') 
 
-#Training the models
+#transforming the train feaatures (tf-idf)
 train_features = transform_(X_train)
 
 #@title
