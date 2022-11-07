@@ -1,0 +1,296 @@
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from textblob import TextBlob
+def transform_(mail):
+    bow = CountVectorizer(analyzer=lemma_).fit(X_train)
+    messages = bow.transform(mail)
+    print('sparse matrix shape:', messages.shape)
+    print('number of non-zeros:', messages.nnz) 
+    print('sparsity: %.2f%%' % (100.0 * messages.nnz / (messages.shape[0] * messages.shape[1])))
+    tfidf = TfidfTransformer().fit(messages)
+    tfidf_msgs = tfidf.transform(messages)
+    return tfidf_msgs
+    
+    
+    
+-------------------------------------------
+    Decision tree
+    
+ #Performance matrix of model
+from sklearn.tree import DecisionTreeClassifier 
+model = DecisionTreeClassifier()
+model_prediction(model)
+------------------------------------------
+# LSTM , BiLSTM
+
+# importing libraries
+import re
+import string
+
+# readign in dataset again as a reintialized DataFrame
+df = pd.read_csv('spam_ham_dataset1.csv')
+df.head()
+
+df["text"] = df.text
+df["spam"] = df.label
+
+# 80/20 train-test split of data
+emails_train, emails_test, target_train, target_test = train_test_split(df.text,df.spam,test_size = 0.2) 
+
+#preprocessing functions defined in this block then used in series on a given input to the final "clean_up" function
+
+def remove_number(word):
+    res = re.sub(r'\d+', '', word)
+    return res we
+def remove_whitespace(word):
+    res = word.strip()
+    return res
+def replace_newline(word):
+    return word.replace('\n','')
+def remove_punctuation(word):
+    res = word.translate(str.maketrans(dict.fromkeys(string.punctuation)))
+    return res
+def to_lower(word):
+    res = word.lower()
+    return res
+def remove_special_characters(word):
+    res = word.translate(str.maketrans(dict.fromkeys(string.punctuation)))
+    return res
+def remove_hyperlink(word):
+    return re.sub(r"http\S+", "", word)
+def clean_up(sentence):
+    functions = [remove_hyperlink, replace_newline, to_lower, remove_number, remove_punctuation, remove_whitespace, remove_special_characters]
+    for o in functions:
+        sentence = o(sentence)
+    return sentence
+
+
+#cleaning up train and test input datas
+x_train = [clean_up(o) for o in emails_train]
+x_test = [clean_up(o) for o in emails_test]
+
+# encoding the labels (with reference to train labels)
+
+from sklearn.preprocessing import LabelEncoder
+le = LabelEncoder()
+train_y = le.fit_transform(target_train.values)
+test_y = le.transform(target_test.values)
+
+train_y
+
+#setting values used for data processing
+
+size = 100 
+maximum_feature = 50000
+maximum_len = 2000
+
+#tokenizing the input (x) data, with refernce to train data
+
+from tensorflow.keras.preprocessing.text import Tokenizer
+tokenizer = Tokenizer(num_words=maximum_feature)
+
+tokenizer.fit_on_texts(x_train)
+
+x_train_features = np.array(tokenizer.texts_to_sequences(x_train) , dtype=object)
+x_test_features = np.array(tokenizer.texts_to_sequences(x_test) , dtype=object)
+
+#padding to equal lengths
+
+from keras_preprocessing.sequence import pad_sequences
+x_train_features = pad_sequences(x_train_features,maxlen=maximum_len)
+x_test_features = pad_sequences(x_test_features,maxlen=maximum_len)
+x_train_features[0]
+
+# importing libraries to be used for model creation
+from tensorflow.keras.layers import Dense, Input, LSTM, Embedding, Dropout, Activation
+from tensorflow.keras.layers import Bidirectional
+from tensorflow.keras.models import Model
+
+# making the bidirectional LSTM model
+import tensorflow as tf
+embedding_vecor_length = 32
+
+model = tf.keras.Sequential()
+model.add(Embedding(maximum_feature, embedding_vecor_length, input_length=maximum_len))
+model.add(Bidirectional(tf.keras.layers.LSTM(64)))
+model.add(Dense(16, activation='relu'))
+model.add(Dropout(0.1))
+model.add(Dense(1, activation='sigmoid'))
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+print(model.summary())
+
+# training the model
+history = model.fit(x_train_features, train_y, batch_size=32, epochs=20, validation_data=(x_test_features, test_y))
+
+# plottiin metrics of the model's training process (train, val) --note test set was used for validation
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.grid()
+plt.show()
+
+# making list of predictions based on probability outputs from model
+y_predict  = [1 if o>0.5 else 0 for o in model.predict(x_test_features)]
+
+# creating a confusion matrix given predicted labels and actual labels
+cf_matrix =confusion_matrix(test_y,y_predict)
+
+tn, fp, fn, tp = confusion_matrix(test_y,y_predict).ravel()
+
+# plotting confusion matrix
+import seaborn as sns
+
+ax= plt.subplot()
+sns.heatmap(cf_matrix, annot=True, ax = ax,cmap='Blues',fmt=''); #annot=True to annotate cells
+
+# labels, title and ticks
+ax.set_xlabel('Predicted labels');
+ax.set_ylabel('True labels'); 
+ax.set_title('Confusion Matrix'); 
+ax.xaxis.set_ticklabels(['Not Spam', 'Spam']); ax.yaxis.set_ticklabels(['Not Spam', 'Spam']);
+
+# printing other metrics of model performance
+print("Precision: {:.2f}%".format(100 * precision_score(test_y, y_predict)))
+print("Recall: {:.2f}%".format(100 * recall_score(test_y, y_predict)))
+print("F1 Score: {:.2f}%".format(100 * f1_score(test_y,y_predict)))
+
+f1_score(test_y,y_predict)
+-------------------------------------------------------------------------------
+
+# Word2Vec
+
+# starting installations and import functions
+!pip install gensim
+import gensim
+from gensim.models import Word2Vec
+
+# upgrading gensim
+pip install --upgrade gensim
+
+# rereading in the data from the csv file into a reinitialized DataFrame
+df = pd.read_csv('spam_ham_dataset1.csv')
+df.head()
+
+df["text"] = df.text
+df["spam"] = df.label
+
+X_word2vec = df["text"]
+Y_word2vec = df["spam"]
+X_word2vec, Y_word2vec
+
+# encoding the labels
+from sklearn.preprocessing import LabelEncoder
+le_word2vec = LabelEncoder()
+Y_word2vec = le_word2vec.fit_transform(Y_word2vec)
+Y_word2vec
+
+#importing nltk librarises for stemming and stopword
+from nltk.corpus import stopwords 
+from nltk.stem.porter import PorterStemmer
+nltk.download('stopwords')
+
+# preprocessing all email-texts in dataset, one by one: 
+#    removing non letters, lowercasing, splitting sentences, removing stopwords and stemming, then rejoining 
+#    the processed email-text into one string to append to list before moving on to next email-text sample.
+
+stemmer=PorterStemmer()
+corpus=[]
+for i in range(len(df["text"])):
+    text_1=re.sub('[^a-zA-Z]'," ",df["text"][i])
+    text_1=text_1.lower()
+    text_1=text_1.split()
+    text_1=[stemmer.stem(word) for word in text_1 if word not in stopwords.words('english')]
+    text_1=' '.join(text_1)
+    corpus.append(text_1)
+
+# ensuring all emails were processed
+print(len(corpus))
+print(len(Y_word2vec))
+
+# 80/20 train-test split on the processed text data and labels.
+xtrain , xtest , ytrain , ytest = train_test_split(corpus , Y_word2vec , test_size = 0.2 , random_state = 2)
+
+# creating a list of all vocabulary in the training set
+doc = [text.split() for text in xtrain]
+
+# making a Word2Vec model
+model = gensim.models.Word2Vec(window = 3 , min_count = 5 , workers = 8)
+
+# buiding the vocabulary known to the model using the list of vocabularies from the training set
+model.build_vocab(doc)
+
+# getting a list of keys in the model, ie the vocab/words
+words = list(model.wv.index_to_key)
+vocabulary_size = len(words)
+print(vocabulary_size)
+
+#training the model on the vocabulary that comes directly from xtrain
+model.train(doc , total_examples = len(doc) , epochs = 32)
+
+# using tokenizer on the xtrain text to get a list/dict of vocab and printing the size to get the number of vocabulary present.
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(xtrain)
+vocabulary_size = len(tokenizer.word_index) + 1
+print(vocabulary_size)
+
+# getting sequence for encoded text
+x_train = pad_sequences(tokenizer.texts_to_sequences(xtrain) , maxlen = 300)
+x_test = pad_sequences(tokenizer.texts_to_sequences(xtest) , maxlen = 300)
+
+# adding the numpy vector of words from the tokenizer that are in the word_vec model to a matrix at a corrrelating index to each word in the tokenizer.
+matrix = np.zeros((vocabulary_size, 100))
+print(matrix)
+for word, i in tokenizer.word_index.items():
+    if word in model.wv:
+        matrix[i] = model.wv[word]
+print(matrix.shape)
+
+#building a model
+embedding_layer = Embedding(vocabulary_size, 100, weights = [matrix], input_length = 300, trainable = False)
+model = Sequential()
+model.add(embedding_layer)
+model.add(Dropout(0.2))
+model.add(LSTM(64, dropout = 0.2, recurrent_dropout = 0.2))
+model.add(Dense(1, activation = 'sigmoid'))
+
+model.summary()
+
+# compiling models with specified loss function, optimizer and ouput metrics.
+model.compile(loss = 'binary_crossentropy' , optimizer = "adam" , metrics = ['accuracy'])
+
+# training the model with monitoring for early stop from loss in accuracy.
+history = model.fit(x_train , ytrain , batch_size = 32 , epochs = 20, validation_split = 0.1 ,
+                    verbose = 1 , callbacks = [ ReduceLROnPlateau(monitor = 'val_loss' , patience = 5 , cooldown = 0),
+              EarlyStopping(monitor = 'val_acc', min_delta = 1e-4 , patience = 5)] )
+
+# evaluating from inbuilt model function
+score = model.evaluate(x_test, ytest, batch_size = 32)
+print()
+print("Accuracy Score : " , score[1])
+print("Loss Score : " , score[0])
+
+# gathering predictions from the model based on probability categorization (bi) and getting the confusion matrix on the predicted vs actual labels
+
+y_predict  = [1 if o>0.5 else 0 for o in model.predict(x_test)]
+
+cf_matrix = confusion_matrix(ytest , y_predict)
+
+tn, fp, fn, tp = confusion_matrix(ytest,y_predict).ravel()
+
+# plotting the confusion matrix
+
+ax= plt.subplot()
+sns.heatmap(cf_matrix, annot=True, ax = ax,cmap='Blues',fmt=''); #annot=True to annotate cells
+
+ax.set_xlabel('Predicted labels');
+ax.set_ylabel('True labels'); 
+ax.set_title('Confusion Matrix'); 
+ax.xaxis.set_ticklabels(['Not Spam', 'Spam']); ax.yaxis.set_ticklabels(['Not Spam', 'Spam']);
+
+print("Precision: {:.2f}%".format(100 * precision_score(ytest, y_predict)))
+print("Recall: {:.2f}%".format(100 * recall_score(ytest, y_predict)))
+print("F1 Score: {:.2f}%".format(100 * f1_score(ytest,y_predict)))
+
+f1_score(ytest,y_predict)
